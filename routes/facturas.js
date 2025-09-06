@@ -12,7 +12,7 @@ router.get("/", (req, res) => {
 
   const archivos = fs.readdirSync(uploadsPath).filter(f => f.endsWith(".pdf"));
 
-  // Usamos BASE_URL si existe, si no armamos con host dinámico
+  // 🚀 usamos BASE_URL definida en .env (Railway)
   const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
 
   const listaConUrls = archivos.map(nombre => ({
@@ -22,6 +22,7 @@ router.get("/", (req, res) => {
 
   res.json(listaConUrls);
 });
+
 
 // DELETE: eliminar PDF
 router.delete("/:nombre", (req, res) => {
