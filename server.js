@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Carpetas públicas
-app.use("/uploads", express.static(path.join("uploads")));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use("/img/productos", express.static(path.join("img/productos")));
 
 // Rutas
