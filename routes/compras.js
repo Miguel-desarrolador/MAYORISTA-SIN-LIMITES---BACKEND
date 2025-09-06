@@ -2,10 +2,13 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { jsPDF } from "jspdf";
+import fetch from "node-fetch"; // para descargar imágenes desde URL y convertir a base64
 
 const router = express.Router();
 
+// ==========================
 // Función para dibujar encabezado de tabla
+// ==========================
 function dibujarEncabezadoTabla(doc, y, margen) {
   const posNombre = margen + 100;
   const posPrecio = margen + 260;
@@ -25,7 +28,28 @@ function dibujarEncabezadoTabla(doc, y, margen) {
   return y + 30; // nueva posición Y después del encabezado
 }
 
+// ==========================
+// Helper para capitalizar
+// ==========================
+const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+
+// ==========================
+// Helper: convertir imagen de URL a base64
+// ==========================
+async function imageURLtoBase64(url) {
+  try {
+    const res = await fetch(url);
+    const buffer = await res.arrayBuffer();
+    return `data:image/jpeg;base64,${Buffer.from(buffer).toString("base64")}`;
+  } catch (err) {
+    console.error("Error convirtiendo imagen a base64:", err);
+    return null;
+  }
+}
+
+// ==========================
 // POST generar PDF
+// ==========================
 router.post("/pdf", async (req, res) => {
   try {
     const { datosCliente, carrito } = req.body;
@@ -44,13 +68,10 @@ router.post("/pdf", async (req, res) => {
     doc.setFillColor(40, 116, 240); // azul
     doc.rect(0, 0, 595, 60, "F");
 
-    // Logo
-    const logoPath = path.join("/img/productos", "logo2.jpg"); // ruta local
-    if (fs.existsSync(logoPath)) {
-      const bufferLogo = fs.readFileSync(logoPath);
-      const logoBase64 = `data:image/jpeg;base64,${bufferLogo.toString("base64")}`;
-      doc.addImage(logoBase64, "JPEG", margen, 5, 50, 50);
-    }
+    // Logo (Railway)
+    const logoURL = "https://mayorista-sin-limites-backend-production.up.railway.app/img/productos/logo2.jpg";
+    const logoBase64 = await imageURLtoBase64(logoURL);
+    if (logoBase64) doc.addImage(logoBase64, "JPEG", margen, 5, 50, 50);
 
     doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
@@ -67,8 +88,6 @@ router.post("/pdf", async (req, res) => {
     doc.setFont("helvetica", "bold");
     doc.text("Datos del Cliente:", margen, y);
     y += 20;
-
-    const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
     for (let key in datosCliente) {
       doc.setFont("helvetica", "bold");
@@ -89,29 +108,17 @@ router.post("/pdf", async (req, res) => {
       const subtotal = p.precio * p.cantidad;
       total += subtotal;
 
-      // Si no hay suficiente espacio, crear nueva página
+      // Nueva página si es necesario
       if (y + 100 > 800) {
         doc.addPage();
         y = 40;
         y = dibujarEncabezadoTabla(doc, y, margen);
       }
 
-      // Imagen del producto
-      let imgData = "";
-      try {
-        const imagePath = path.join("img/productos", p.imagen); // ruta local
-        if (fs.existsSync(imagePath)) {
-          const buffer = fs.readFileSync(imagePath);
-          const ext = path.extname(p.imagen).substring(1).toLowerCase();
-          imgData = `data:image/${ext};base64,${buffer.toString("base64")}`;
-        }
-      } catch (err) {
-        console.error("Error cargando imagen:", err);
-      }
-
-      if (imgData) {
-        doc.addImage(imgData, "JPEG", margen, y, 90, 90); // 90x90
-      }
+      // Imagen del producto desde Railway
+      const imgURL = `https://mayorista-sin-limites-backend-production.up.railway.app/img/productos/${p.imagen}`;
+      const imgBase64 = await imageURLtoBase64(imgURL);
+      if (imgBase64) doc.addImage(imgBase64, "JPEG", margen, y, 90, 90);
 
       // Texto del producto
       const posNombre = margen + 100;
@@ -127,7 +134,7 @@ router.post("/pdf", async (req, res) => {
       doc.text(`${p.cantidad}`, posCantidad, y + 25);
       doc.text(`$${subtotal}`, posSubtotal, y + 25);
 
-      y += 100; // ajustar según el alto de la imagen
+      y += 100;
       doc.setDrawColor(200);
       doc.setLineWidth(0.5);
       doc.line(margen, y, 555, y);
@@ -155,17 +162,21 @@ router.post("/pdf", async (req, res) => {
 
     const fileName = `Compra_${datosCliente.nombre}_${Date.now()}.pdf`;
     const filePath = path.join(uploadsPath, fileName);
-    doc.save(filePath); // guarda en Node
+
+    // Guardar PDF en Node
+    const pdfBytes = doc.output();
+    fs.writeFileSync(filePath, pdfBytes);
 
     // ======================
     // Link público y WhatsApp
     // ======================
-    const linkPublico = `http://localhost:${process.env.PORT}/uploads/${fileName}`;
-    const numero = "543413047240"; // 54 = Argentina + tu número sin 0 inicial
+    const linkPublico = `https://mayorista-sin-limites-backend-production.up.railway.app/uploads/${fileName}`;
+    const numero = "5493329317141"; // tu número de WhatsApp
     const mensaje = `Hola! Aquí está tu factura: ${linkPublico}`;
     const urlWhatsApp = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 
     res.json({ filePath, urlWhatsApp });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error al generar PDF" });
