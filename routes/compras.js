@@ -167,8 +167,8 @@ router.post("/pdf", async (req, res) => {
     const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
     const linkPublico = `${baseUrl}/uploads/${encodeURIComponent(fileName)}`;
 
-    const numero = "543413047240";
-    const mensaje = `Hola! Aquí está tu factura: ${linkPublico}`;
+    const numero = "5493329317141";
+    const mensaje = `Hola! Aquí está mi compra en pdf: ${linkPublico}`;
     const urlWhatsApp = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 
     res.json({ filePath, urlWhatsApp, linkPublico });
