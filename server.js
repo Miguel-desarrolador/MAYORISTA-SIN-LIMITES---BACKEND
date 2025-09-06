@@ -11,13 +11,16 @@ dotenv.config();
 
 const app = express();
 
+// 🚀 Confiar en proxy (para que respete https en Railway)
+app.set("trust proxy", true);
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Carpetas públicas
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use("/uploads", express.static(path.join("uploads")));
 app.use("/img/productos", express.static(path.join("img/productos")));
 
 // Rutas
