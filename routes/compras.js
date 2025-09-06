@@ -22,7 +22,7 @@ function dibujarEncabezadoTabla(doc, y, margen) {
   doc.text("Cantidad", posCantidad, y + 17);
   doc.text("Subtotal", posSubtotal, y + 17);
 
-  return y + 30; // nueva posición Y después del encabezado
+  return y + 30;
 }
 
 // POST generar PDF
@@ -41,11 +41,11 @@ router.post("/pdf", async (req, res) => {
     // ======================
     // Encabezado con fondo azul y logo
     // ======================
-    doc.setFillColor(40, 116, 240); // azul
+    doc.setFillColor(40, 116, 240);
     doc.rect(0, 0, 595, 60, "F");
 
     // Logo
-    const logoPath = path.join("/img/productos", "logo2.jpg"); // ruta local
+    const logoPath = path.join(process.cwd(), "img", "productos", "logo2.jpg");
     if (fs.existsSync(logoPath)) {
       const bufferLogo = fs.readFileSync(logoPath);
       const logoBase64 = `data:image/jpeg;base64,${bufferLogo.toString("base64")}`;
@@ -89,7 +89,6 @@ router.post("/pdf", async (req, res) => {
       const subtotal = p.precio * p.cantidad;
       total += subtotal;
 
-      // Si no hay suficiente espacio, crear nueva página
       if (y + 100 > 800) {
         doc.addPage();
         y = 40;
@@ -99,7 +98,7 @@ router.post("/pdf", async (req, res) => {
       // Imagen del producto
       let imgData = "";
       try {
-        const imagePath = path.join("img/productos", p.imagen); // ruta local
+        const imagePath = path.join(process.cwd(), "img", "productos", p.imagen);
         if (fs.existsSync(imagePath)) {
           const buffer = fs.readFileSync(imagePath);
           const ext = path.extname(p.imagen).substring(1).toLowerCase();
@@ -110,7 +109,7 @@ router.post("/pdf", async (req, res) => {
       }
 
       if (imgData) {
-        doc.addImage(imgData, "JPEG", margen, y, 90, 90); // 90x90
+        doc.addImage(imgData, "JPEG", margen, y, 90, 90);
       }
 
       // Texto del producto
@@ -127,7 +126,7 @@ router.post("/pdf", async (req, res) => {
       doc.text(`${p.cantidad}`, posCantidad, y + 25);
       doc.text(`$${subtotal}`, posSubtotal, y + 25);
 
-      y += 100; // ajustar según el alto de la imagen
+      y += 100;
       doc.setDrawColor(200);
       doc.setLineWidth(0.5);
       doc.line(margen, y, 555, y);
@@ -135,7 +134,7 @@ router.post("/pdf", async (req, res) => {
     }
 
     // ======================
-    // Total y mensaje de gracias
+    // Total y mensaje
     // ======================
     y += 10;
     doc.setFont("helvetica", "bold");
@@ -150,25 +149,32 @@ router.post("/pdf", async (req, res) => {
     // ======================
     // Guardar PDF en backend
     // ======================
-    const uploadsPath = path.join("uploads");
+    const uploadsPath = path.join(process.cwd(), "uploads");
     if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath);
 
-    const fileName = `Compra_${datosCliente.nombre}_${Date.now()}.pdf`;
+    const safeName = String(datosCliente.nombre || "cliente").replace(/[^a-z0-9_\-\.]/gi, "_");
+    const fileName = `Compra_${safeName}_${Date.now()}.pdf`;
     const filePath = path.join(uploadsPath, fileName);
-    doc.save(filePath); // guarda en Node
+
+    // 👇 Guardar correctamente en Node
+    const arrayBuffer = doc.output("arraybuffer");
+    const buffer = Buffer.from(arrayBuffer);
+    fs.writeFileSync(filePath, buffer);
 
     // ======================
     // Link público y WhatsApp
     // ======================
-    const linkPublico = `http://localhost:${process.env.PORT}/uploads/${fileName}`;
-    const numero = "543413047240"; // 54 = Argentina + tu número sin 0 inicial
+    const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get("host")}`;
+    const linkPublico = `${baseUrl}/uploads/${encodeURIComponent(fileName)}`;
+
+    const numero = "543413047240";
     const mensaje = `Hola! Aquí está tu factura: ${linkPublico}`;
     const urlWhatsApp = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 
-    res.json({ filePath, urlWhatsApp });
+    res.json({ filePath, urlWhatsApp, linkPublico });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Error al generar PDF" });
+    res.status(500).json({ msg: "Error al generar PDF", error: err.message });
   }
 });
 
