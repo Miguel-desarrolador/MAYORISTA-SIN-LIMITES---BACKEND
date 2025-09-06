@@ -172,6 +172,7 @@ router.post("/pdf", async (req, res) => {
     const urlWhatsApp = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
 
     res.json({ filePath, urlWhatsApp, linkPublico });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Error al generar PDF", error: err.message });
