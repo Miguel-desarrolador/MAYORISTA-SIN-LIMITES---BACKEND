@@ -2,8 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { jsPDF } from "jspdf";
-import Pedido from "../models/Pedido.js";
-import { Producto } from "../models/Producto.js"; // tu modelo de productos
 
 const router = express.Router();
 
@@ -164,18 +162,9 @@ const arrayBuffer = doc.output("arraybuffer");
 const buffer = Buffer.from(arrayBuffer);
 fs.writeFileSync(filePath, buffer);
 
-// ...
-// Después de generar el PDF y calcular el total
-const nuevoPedido = new Pedido({
-  nombreFactura: fileName.replace(".pdf", ""),
-  carrito,
-  datosCliente,
-  total,
-  estado: "activo"
-});
-
-await nuevoPedido.save(); // 🔴 sin esto nunca se guarda
-
+// 👇 Guardar JSON con carrito para Cancelar Pedido
+const jsonPath = path.join(uploadsPath, fileName.replace(".pdf", ".json"));
+fs.writeFileSync(jsonPath, JSON.stringify({ carrito, datosCliente }, null, 2));
 
     // ======================
     // Link público y WhatsApp
