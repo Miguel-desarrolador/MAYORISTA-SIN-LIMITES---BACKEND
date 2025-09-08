@@ -2,6 +2,38 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { jsPDF } from "jspdf";
+import Pedido from "../models/Pedido.js"; // Asegúrate de importarlo
+import { Producto } from "../models/Producto.js"; // Ya lo tienes
+
+// ... dentro de tu router.post("/pdf", async (req, res) => { ... })
+
+// Después de guardar el PDF:
+const nuevoPedido = new Pedido({
+  datosCliente,
+  carrito: carrito.map(p => ({
+    productoId: p.id,   // tu id numérico del producto
+    cantidad: p.cantidad,
+    precio: p.precio
+  })),
+  total,
+  estado: "pendiente",   // estado inicial
+  fecha: new Date()
+});
+
+await nuevoPedido.save();
+
+// Reducir stock de los productos
+for (let p of carrito) {
+  await Producto.updateOne({ id: p.id }, { $inc: { stock: -p.cantidad } });
+}
+
+// Retornar también el pedidoId al frontend
+res.json({ 
+  filePath, 
+  urlWhatsApp, 
+  linkPublico, 
+  pedidoId: nuevoPedido._id 
+});
 
 const router = express.Router();
 
