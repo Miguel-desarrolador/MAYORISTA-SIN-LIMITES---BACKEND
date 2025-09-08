@@ -5,28 +5,6 @@
 
   const router = express.Router();
 
-  // POST: Cancelar pedido y restaurar stock
-  router.post("/cancelar/:nombre", async (req, res) => {
-    try {
-      const { nombre } = req.params;
-      const uploadsPath = path.join(process.cwd(), "uploads");
-      const jsonPath = path.join(uploadsPath, nombre.replace(".pdf", ".json"));
-
-      if (!fs.existsSync(jsonPath))
-        return res.status(404).json({ msg: "Factura no encontrada" });
-
-      const data = JSON.parse(fs.readFileSync(jsonPath, "utf-8"));
-
-      for (const item of data.carrito) {
-        await Producto.findByIdAndUpdate(item.id, { $inc: { stock: item.cantidad } });
-      }
-
-      res.json({ msg: "Pedido cancelado y stock restaurado correctamente" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Error al cancelar pedido", error: err.message });
-    }
-  });
 
   // GET: Listar PDFs
   router.get("/", (req, res) => {
@@ -55,22 +33,27 @@
     }
   });
 
-  // DELETE: Eliminar PDF
-  router.delete("/:nombre", (req, res) => {
-    try {
-      const { nombre } = req.params;
-      const filePath = path.join("uploads", nombre);
+  // DELETE: Eliminar PDF + JSON
+router.delete("/:nombre", (req, res) => {
+  try {
+    const { nombre } = req.params;
+    const uploadsPath = path.join("uploads");
+    const filePath = path.join(uploadsPath, nombre);
+    const jsonPath = filePath.replace(".pdf", ".json"); // JSON correspondiente
 
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ msg: "Archivo no encontrado" });
-      }
-
-      fs.unlinkSync(filePath);
-      res.json({ msg: "Archivo eliminado correctamente" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ msg: "Error al eliminar factura" });
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ msg: "Archivo no encontrado" });
     }
-  });
+
+    fs.unlinkSync(filePath); // Elimina PDF
+    if (fs.existsSync(jsonPath)) fs.unlinkSync(jsonPath); // Elimina JSON
+
+    res.json({ msg: "Factura y datos del pedido eliminados correctamente" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Error al eliminar factura" });
+  }
+});
+
 
   export default router;
