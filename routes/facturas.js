@@ -1,6 +1,7 @@
 import express from "express";
 import fs from "fs";
 import path from "path";
+import Pedido from "../models/Pedido.js";
 
 const router = express.Router();
 
@@ -54,6 +55,29 @@ router.delete("/:nombre", (req, res) => {
   } catch (err) {
     console.error("❌ Error al eliminar factura:", err);
     res.status(500).json({ msg: "Error al eliminar factura" });
+  }
+});
+
+
+
+// Cancelar pedido y devolver stock
+router.post("/cancelar/:nombre", async (req, res) => {
+  try {
+    const pedido = await Pedido.findOne({ nombre: req.params.nombre });
+    if(!pedido) return res.status(404).json({ message: "Pedido no encontrado" });
+
+    // Devolver stock
+    for(const item of pedido.items) {
+      await Producto.findByIdAndUpdate(item.productoId, { $inc: { stock: item.cantidad } });
+    }
+
+    // Eliminar pedido
+    await Pedido.deleteOne({ _id: pedido._id });
+
+    res.json({ message: "Pedido cancelado y stock devuelto correctamente" });
+  } catch(err) {
+    console.error(err);
+    res.status(500).json({ message: "Error al cancelar el pedido" });
   }
 });
 
