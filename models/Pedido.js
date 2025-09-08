@@ -1,8 +1,7 @@
-
 import mongoose from "mongoose";
 
 const pedidoSchema = new mongoose.Schema({
-  nombre: { type: String, required: true, unique: true },
+  nombre: { type: String, required: true, unique: true }, // mismo nombre que el PDF, sin .pdf
   items: [
     {
       productoId: { type: mongoose.Schema.Types.ObjectId, ref: "Producto" },

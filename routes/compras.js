@@ -156,10 +156,15 @@ router.post("/pdf", async (req, res) => {
     const fileName = `Compra_${safeName}_${Date.now()}.pdf`;
     const filePath = path.join(uploadsPath, fileName);
 
-    // 👇 Guardar correctamente en Node
-    const arrayBuffer = doc.output("arraybuffer");
-    const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(filePath, buffer);
+   
+// 👇 Guardar correctamente en Node
+const arrayBuffer = doc.output("arraybuffer");
+const buffer = Buffer.from(arrayBuffer);
+fs.writeFileSync(filePath, buffer);
+
+// 👇 Guardar JSON con carrito para Cancelar Pedido
+const jsonPath = path.join(uploadsPath, fileName.replace(".pdf", ".json"));
+fs.writeFileSync(jsonPath, JSON.stringify({ carrito, datosCliente }, null, 2));
 
     // ======================
     // Link público y WhatsApp
