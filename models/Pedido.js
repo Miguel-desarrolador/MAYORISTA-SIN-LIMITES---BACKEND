@@ -1,13 +1,14 @@
 import mongoose from "mongoose";
 
 const pedidoSchema = new mongoose.Schema({
-  nombre: { type: String, required: true, unique: true }, // mismo nombre que el PDF, sin .pdf
-  items: [
+  nombreFactura: { type: String, required: true, unique: true },
+  carrito: [
     {
-      productoId: { type: mongoose.Schema.Types.ObjectId, ref: "Producto" },
-      cantidad: { type: Number, required: true }
+      productoId: { type: mongoose.Schema.Types.ObjectId, ref: "Producto", required: true },
+      cantidad: { type: Number, required: true, min: 1 }
     }
   ],
+  datosCliente: { type: Object, required: true },
   fecha: { type: Date, default: Date.now }
 });
 
