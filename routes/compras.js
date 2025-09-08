@@ -2,8 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import { jsPDF } from "jspdf";
-import Pedido from "../models/Pedido.js";
-import { Producto } from "../models/Producto.js";
 
 const router = express.Router();
 
@@ -164,23 +162,6 @@ const arrayBuffer = doc.output("arraybuffer");
 const buffer = Buffer.from(arrayBuffer);
 fs.writeFileSync(filePath, buffer);
 
-
-const nuevoPedido = new Pedido({
-  datosCliente,
-  carrito: carrito.map(p => ({
-    productoId: p.id,  // tu id numérico
-    cantidad: p.cantidad,
-    precio: p.precio
-  })),
-  total
-});
-
-await nuevoPedido.save();
-
-// Reducir stock de los productos
-for (let p of carrito) {
-  await Producto.updateOne({ id: p.id }, { $inc: { stock: -p.cantidad } });
-}
 
     // ======================
     // Link público y WhatsApp
