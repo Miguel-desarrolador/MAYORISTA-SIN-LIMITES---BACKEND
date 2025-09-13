@@ -6,6 +6,8 @@ import { Producto } from "../models/Producto.js";
 
 const router = express.Router();
 
+
+
 // ==========================
 // CONFIGURACIÓN MULTER
 // ==========================
@@ -69,27 +71,18 @@ router.post("/", upload.single("imagen"), async (req, res) => {
 });
 
 // ==========================
-// PUT actualizar producto (stock, nombre, precio o categoría)
+// PUT actualizar stock usando id
 // ==========================
 router.put("/:id", async (req, res) => {
   try {
-    const { nombre, categoria, precio, stock } = req.body;
+    const { stock } = req.body;
 
-    // Validación básica
-    if (stock !== undefined && stock < 0) {
-      return res.status(400).json({ msg: "Stock inválido" });
-    }
+    if (stock < 0) return res.status(400).json({ msg: "Stock inválido" });
 
-    // Construimos un objeto dinámico con los campos a actualizar
-    const camposActualizar = {};
-    if (nombre !== undefined) camposActualizar.nombre = nombre;
-    if (categoria !== undefined) camposActualizar.categoria = categoria;
-    if (precio !== undefined) camposActualizar.precio = precio;
-    if (stock !== undefined) camposActualizar.stock = stock;
-
+    // Buscar por campo numérico "id"
     const producto = await Producto.findOneAndUpdate(
       { id: parseInt(req.params.id) },
-      camposActualizar,
+      { stock },
       { new: true }
     );
 
@@ -99,7 +92,7 @@ router.put("/:id", async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ msg: "Error al actualizar producto" });
+    res.status(500).json({ msg: "Error al actualizar stock" });
   }
 });
 
@@ -112,11 +105,14 @@ router.delete("/:id", async (req, res) => {
 
     if (!producto) return res.status(404).json({ msg: "Producto no encontrado" });
 
+    // -------------------------
     // Eliminar la imagen del servidor
+    // -------------------------
     const imagenPath = path.join("img/productos", producto.imagen);
     fs.unlink(imagenPath, (err) => {
       if (err) {
         console.error("No se pudo eliminar la imagen:", err);
+        // No rompemos la eliminación del producto, solo informamos
       } else {
         console.log("Imagen eliminada correctamente:", producto.imagen);
       }
@@ -129,5 +125,6 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ msg: "Error al eliminar producto" });
   }
 });
+
 
 export default router;
