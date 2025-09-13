@@ -127,4 +127,37 @@ router.delete("/:id", async (req, res) => {
 });
 
 
+// ==========================
+// PUT actualizar imagen de un producto
+// ==========================
+router.put("/:id/imagen", upload.single("imagen"), async (req, res) => {
+  try {
+    const producto = await Producto.findOne({ id: parseInt(req.params.id) });
+    if (!producto) return res.status(404).json({ msg: "Producto no encontrado" });
+
+    if (!req.file) return res.status(400).json({ msg: "No se subió ninguna imagen" });
+
+    // -------------------------
+    // Eliminar la imagen anterior
+    // -------------------------
+    const imagenAnterior = path.join("img/productos", producto.imagen);
+    fs.unlink(imagenAnterior, (err) => {
+      if (err) console.error("No se pudo eliminar la imagen anterior:", err);
+    });
+
+    // -------------------------
+    // Guardar la nueva imagen
+    // -------------------------
+    producto.imagen = req.file.filename;
+    await producto.save();
+
+    res.json({ imagen: producto.imagen, msg: "Imagen actualizada correctamente" });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Error al actualizar la imagen" });
+  }
+});
+
+
 export default router;
